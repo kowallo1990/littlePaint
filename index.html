@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<link href="color-picker.min.css" rel="stylesheet">
+<script src="color-picker.min.js"></script>
+
+  <body>
+    <input type="text" class="widthValue"></input>
+    <div class="sizeOfBrush">Ustaw rozmiar</div>
+    <input type="text" class="pickColor"></input>
+    <div class="brush">Pędzel</div>
+    <div class="rubber">Gumka</div>
+    <canvas id="draw" width="800" height="800"></canvas>
+    <a href="#" class="button" id="btn-download" download="my-file-name.png">Download</a>
+  </body>
+</html>
+<style>
+  canvas {
+    border: 1px solid black;
+  }
+  div, a {
+    cursor: pointer;
+  }
+</style>
+<script>
+  class KowalPaint {
+    constructor() {
+      this.canvas = document.querySelector('#draw');
+      this.ctx = this.canvas.getContext('2d');
+      this.canvasSize();
+      this.ctxinfo();
+      this.getDomElements()
+      this.isDrawing = false;
+      this.isCleaning = false;
+      this.isActive = false;
+      this.lastX = 0;
+      this.lastY = 0;
+      this.picker = new CP(this.colorInput);
+      this.listOfEvents();
+    }
+    canvasSize() {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    }
+    ctxinfo() {
+      this.ctx.strokeStyle = '#BADA55';
+      this.ctx.lineJoin = 'round';
+      this.ctx.lineCap = 'round';
+      this.ctx.lineWidth = 1;
+    }
+    getDomElements() {
+      this.brushSize = document.querySelector('.sizeOfBrush');
+      this.colorInput = document.querySelector('.pickColor');
+      this.brush = document.querySelector('.brush');
+      this.rubber = document.querySelector('.rubber');
+      this.sizeValue = document.querySelector('.widthValue');
+      this.button = document.getElementById('btn-download');
+    }
+    listOfEvents() {
+      this.brushSize.addEventListener('click', this.setBrushSize.bind(this));
+      this.canvas.addEventListener('mousemove', this.draw.bind(this));
+      this.canvas.addEventListener('mousemove', this.clear.bind(this));
+      this.canvas.addEventListener('mousedown', this.activeDraw.bind(this));
+      this.canvas.addEventListener('mouseup', ()=> this.isActive = false);
+      this.canvas.addEventListener('mouseout', ()=> this.isActive = false);
+      this.picker.on("drag", this.setColorValue.bind(this));
+      this.brush.addEventListener('click', this.useBrush.bind(this));
+      this.rubber.addEventListener('click', this.useRubber.bind(this));
+      this.button.addEventListener('click',this.savePNG.bind(this));
+    }
+    setBrushSize() {
+      this.ctx.lineWidth = parseInt(this.sizeValue.value);
+    }
+    useBrush() {
+      this.isDrawing = true;
+      this.isCleaning = false;
+    }
+    useRubber() {
+      this.isDrawing = false;
+      this.isCleaning = true;
+    }
+    setColorValue(color) {
+      this.colorInput.value = '#' + color;
+      this.ctx.strokeStyle = '#' + color;
+    }
+    activeDraw(e) {
+      this.isActive = true;
+      [this.lastX,this.lastY] = [e.offsetX, e.offsetY];
+    }
+    draw(e) {
+      if(!this.isDrawing) return;
+      if(!this.isActive) return;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.lastX, this.lastY);
+      this.ctx.lineTo(e.offsetX, e.offsetY);
+      this.ctx.stroke();
+      [this.lastX,this.lastY] = [e.offsetX, e.offsetY];
+      console.log(e);
+    }
+    clear(e) {
+      if(!this.isCleaning) return;
+      if(!this.isActive) return;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.lastX, this.lastY);
+      this.ctx.clearRect(e.offsetX, e.offsetY, 50, 50);
+      [this.lastX,this.lastY] = [e.offsetX, e.offsetY];
+    }
+    savePNG() {
+      this.dataURL = this.canvas.toDataURL('image/png');
+      this.button.href = this.dataURL;
+    }
+  }
+
+var newPaint = new KowalPaint;
+
+
+
+
+
+
+
+</script>
