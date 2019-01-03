@@ -22,31 +22,43 @@
     cursor: pointer;
   }
 </style>
+
+
 <script>
-  class KowalPaint {
-    constructor() {
+  class CanvasPaint {
+    constructor (global) {
       this.canvas = document.querySelector('#draw');
       this.ctx = this.canvas.getContext('2d');
+      this.global = global;
       this.canvasSize();
       this.ctxinfo();
-      this.getDomElements()
-      this.isDrawing = false;
-      this.isCleaning = false;
-      this.isActive = false;
-      this.lastX = 0;
-      this.lastY = 0;
-      this.picker = new CP(this.colorInput);
-      this.listOfEvents();
     }
     canvasSize() {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
+      this.canvas.width = this.global.innerWidth;
+      this.canvas.height = this.global.innerHeight;
     }
     ctxinfo() {
       this.ctx.strokeStyle = '#BADA55';
       this.ctx.lineJoin = 'round';
       this.ctx.lineCap = 'round';
       this.ctx.lineWidth = 1;
+    }
+  }
+
+  class KowalPaint {
+    constructor(canvasElement) {
+      this.getDomElements();
+      this.drawingInfo();
+      this.picker = new CP(this.colorInput);
+      this.singForEvents();
+      this.canvasElement = canvasElement;
+    }
+    drawingInfo() {
+      this.isDrawing = false;
+      this.isCleaning = false;
+      this.isActive = false;
+      this.lastX = 0;
+      this.lastY = 0;
     }
     getDomElements() {
       this.brushSize = document.querySelector('.sizeOfBrush');
@@ -56,20 +68,15 @@
       this.sizeValue = document.querySelector('.widthValue');
       this.button = document.getElementById('btn-download');
     }
-    listOfEvents() {
+    singForEvents() {
       this.brushSize.addEventListener('click', this.setBrushSize.bind(this));
-      this.canvas.addEventListener('mousemove', this.draw.bind(this));
-      this.canvas.addEventListener('mousemove', this.clear.bind(this));
-      this.canvas.addEventListener('mousedown', this.activeDraw.bind(this));
-      this.canvas.addEventListener('mouseup', ()=> this.isActive = false);
-      this.canvas.addEventListener('mouseout', ()=> this.isActive = false);
       this.picker.on("drag", this.setColorValue.bind(this));
       this.brush.addEventListener('click', this.useBrush.bind(this));
       this.rubber.addEventListener('click', this.useRubber.bind(this));
       this.button.addEventListener('click',this.savePNG.bind(this));
     }
     setBrushSize() {
-      this.ctx.lineWidth = parseInt(this.sizeValue.value);
+      this.canvasElement.ctx.lineWidth = parseInt(this.sizeValue.value);
     }
     useBrush() {
       this.isDrawing = true;
@@ -81,28 +88,30 @@
     }
     setColorValue(color) {
       this.colorInput.value = '#' + color;
-      this.ctx.strokeStyle = '#' + color;
+      this.canvasElement.ctx.strokeStyle = '#' + color;
     }
     activeDraw(e) {
       this.isActive = true;
       [this.lastX,this.lastY] = [e.offsetX, e.offsetY];
     }
+    deActivateDraw() {
+      this.isActive = false;
+    }
     draw(e) {
       if(!this.isDrawing) return;
       if(!this.isActive) return;
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastX, this.lastY);
-      this.ctx.lineTo(e.offsetX, e.offsetY);
-      this.ctx.stroke();
+      this.canvasElement.ctx.beginPath();
+      this.canvasElement.ctx.moveTo(this.lastX, this.lastY);
+      this.canvasElement.ctx.lineTo(e.offsetX, e.offsetY);
+      this.canvasElement.ctx.stroke();
       [this.lastX,this.lastY] = [e.offsetX, e.offsetY];
-      console.log(e);
     }
     clear(e) {
       if(!this.isCleaning) return;
       if(!this.isActive) return;
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastX, this.lastY);
-      this.ctx.clearRect(e.offsetX, e.offsetY, 50, 50);
+      this.canvasElement.ctx.beginPath();
+      this.canvasElement.ctx.moveTo(this.lastX, this.lastY);
+      this.canvasElement.ctx.clearRect(e.offsetX, e.offsetY, 50, 50);
       [this.lastX,this.lastY] = [e.offsetX, e.offsetY];
     }
     savePNG() {
@@ -111,7 +120,24 @@
     }
   }
 
-var newPaint = new KowalPaint;
+  class PaintingEvents {
+    constructor (canvasObject, canvasAction) {
+      this.canvasObject = canvasObject;
+      this.canvasAction =  canvasAction;
+      this.canvasEvents();
+    }
+    canvasEvents() {
+      this.canvasObject.addEventListener('mousemove', this.canvasAction.draw.bind(this.canvasAction));
+      this.canvasObject.addEventListener('mousemove', this.canvasAction.clear.bind(this.canvasAction));
+      this.canvasObject.addEventListener('mousedown', this.canvasAction.activeDraw.bind(this.canvasAction));
+      this.canvasObject.addEventListener('mouseup', this.canvasAction.deActivateDraw.bind(this.canvasAction));
+      this.canvasObject.addEventListener('mouseout', this.canvasAction.deActivateDraw.bind(this.canvasAction));
+    }
+  }
+
+var newPaint = new CanvasPaint(window);
+var paintingActions = new KowalPaint(newPaint);
+var paintingEvents = new PaintingEvents(newPaint.canvas, paintingActions);
 
 
 
